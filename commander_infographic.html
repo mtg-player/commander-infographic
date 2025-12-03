@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>統率者インフォグラフィック - 完成版</title>
+  <!-- IBM Plex Sans JP for 高視認性の日本語UI -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#9aa4b2;
+      --accent:#60a5fa;
+      --glass:rgba(255,255,255,0.04);
+      --marker-edge: rgba(0,0,0,0.65);
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:'IBM Plex Sans JP', system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic ProN',Meiryo,Arial;
+      background:linear-gradient(180deg,#071029,#07161f);
+      color:#e6eef6;
+    }
+    .app{
+      min-height:100%;
+      display:flex;
+      gap:18px;
+      padding:18px;
+      box-sizing:border-box;
+    }
+    .controls{
+      width:360px;
+      background:var(--card);
+      border-radius:12px;
+      padding:16px;
+      box-shadow:0 8px 24px rgba(2,6,23,0.6);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .preview-wrap{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+    }
+
+    .card-wrap{
+      background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);
+      padding:12px;
+      border-radius:12px;
+      max-width:100%;
+      overflow:auto;
+    }
+    /* 保存とプレビューを一致させるため 1200x675 固定 */
+    .card{
+      width:1200px;
+      height:675px;
+      background:linear-gradient(180deg,#071025,#0d1830);
+      border-radius:12px;
+      padding:24px;
+      box-shadow:0 10px 30px rgba(2,6,23,0.7);
+      position:relative;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.03);
+      box-sizing:border-box;
+    }
+
+    .top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .title{
+      font-size:24px;
+      font-weight:700;
+      letter-spacing:0.6px;
+    }
+    .color-banner{
+      display:flex;
+      gap:6px;
+    }
+    .color-pill{
+      width:36px;
+      height:18px;
+      border-radius:6px;
+      border:1px solid rgba(0,0,0,0.25);
+    }
+
+    .portrait-row{
+      display:flex;
+      justify-content:center;
+      gap:16px;
+      margin-top:10px;
+    }
+    .portrait-slot{
+      height:250px;
+      border-radius:12px;
+      overflow:hidden;
+      position:relative;
+      background:var(--glass);
+      border:1px solid rgba(255,255,255,0.06);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background-size:cover;
+      background-repeat:no-repeat;
+      /* イラスト部分が中央〜やや上寄りに来るように調整 */
+      background-position:50% 30%;
+    }
+    .portrait-slot.single{
+      width:60%;
+    }
+    .portrait-slot.double{
+      width:42%;
+    }
+    .placeholder{
+      font-weight:700;
+      color:#d1d5db;
+      font-size:14px;
+    }
+
+    .timeline-wrap{
+      margin-top:16px;
+      width:100%;
+    }
+    .timeline-title{
+      font-weight:700;
+      margin-bottom:4px;
+      text-align:center;
+    }
+    .timeline-sub{
+      font-size:11px;
+      color:var(--muted);
+      text-align:center;
+      margin-bottom:6px;
+    }
+    .timeline{
+      position:relative;
+      height:64px;
+      background:linear-gradient(90deg,rgba(255,255,255,0.02),transparent);
+      border-radius:10px;
+      padding:6px 16px 0;
+      box-sizing:border-box;
+    }
+    .ticks{
+      position:absolute;
+      left:16px;
+      right:16px;
+      top:4px;
+      bottom:0;
+      display:flex;
+      align-items:flex-start;
+    }
+    .tick{
+      flex:1;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+    .tick-line{
+      width:2px;
+      height:16px;
+      background:rgba(255,255,255,0.08);
+      border-radius:2px;
+    }
+    .tick-label{
+      margin-top:4px;
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .marker{
+      position:absolute;
+      top:16px;
+      transform:translateX(-50%);
+      width:34px;
+      height:34px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      font-size:13px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.55);
+      border:3px solid var(--marker-edge);
+    }
+    .marker.fast{
+      background:#ff8a80;
+      color:#2b0202;
+    }
+    .marker.value{
+      background:var(--accent);
+      color:#042238;
+    }
+
+    .marker-legend{
+      display:flex;
+      justify-content:center;
+      gap:12px;
+      margin-top:4px;
+      font-size:11px;
+      color:var(--muted);
+    }
+    .marker-dot{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      display:inline-block;
+      vertical-align:middle;
+      margin-right:4px;
+    }
+    .marker-dot.fast{background:#ff8a80;}
+    .marker-dot.value{background:var(--accent);}
+
+    .strategies{
+      margin-top:14px;
+      text-align:center;
+      color:var(--muted);
+      font-size:14px;
+      padding:0 12px;
+      box-sizing:border-box;
+    }
+
+    .author{
+      position:absolute;
+      right:24px;
+      bottom:18px;
+      font-size:11px;
+      color:var(--muted);
+      text-align:right;
+    }
+
+    label{
+      display:block;
+      font-size:13px;
+      margin-top:10px;
+      color:#c8d6e7;
+    }
+    input[type=text],
+    input[type=number],
+    textarea{
+      width:100%;
+      padding:8px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.08);
+      margin-top:6px;
+      background:transparent;
+      color:inherit;
+      box-sizing:border-box;
+      font-family:'IBM Plex Sans JP', system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic ProN',Meiryo,Arial;
+      font-size:13px;
+    }
+    .btn{
+      display:inline-block;
+      padding:10px 14px;
+      border-radius:10px;
+      background:#0b86ff;
+      color:#fff;
+      text-decoration:none;
+      border:none;
+      cursor:pointer;
+      font-size:13px;
+    }
+    .small{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:6px;
+    }
+    .row{
+      display:flex;
+      gap:8px;
+    }
+    .half{
+      flex:1;
+    }
+
+    .color-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .color-checkbox{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 8px;
+      background:rgba(255,255,255,0.02);
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.04);
+      font-size:12px;
+    }
+
+    footer{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:10px;
+    }
+
+    @media (max-width:900px){
+      .app{flex-direction:column}
+      .controls{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="controls">
+      <h3 style="margin:0;color:#eaf4ff">統率者インフォジェネレーター（完成版）</h3>
+      <p class="small">Scryfall の画像URL推奨。共闘ON時のみ2体目が出現。出力はTwitter向け1200×675 PNG。</p>
+
+      <div class="section">
+        <label>タイトル（例：ティムナ & クラム）</label>
+        <input id="title" type="text" value="ティムナ & クラム" />
+      </div>
+
+      <div class="section">
+        <label>統率者画像（1体目・ファイル）</label>
+        <input id="img1" type="file" accept="image/*" />
+        <label>統率者画像URL（1体目・任意）</label>
+        <input id="imgUrl1" type="text" placeholder="https://api.scryfall.com/.../art_crop" />
+        <div class="small">※ファイルが優先。URLは Scryfall の画像URL（art_crop など）推奨。</div>
+
+        <label class="small"><input type="checkbox" id="partnerToggle"> 共闘を使う（2体目を追加）</label>
+        <div id="partnerBlock" style="display:none;margin-top:8px">
+          <label>統率者画像（2体目・ファイル）</label>
+          <input id="img2" type="file" accept="image/*" />
+          <label>統率者画像URL（2体目・任意）</label>
+          <input id="imgUrl2" type="text" placeholder="https://api.scryfall.com/.../art_crop" />
+        </div>
+      </div>
+
+      <div class="section">
+        <label>色（複数選択可）</label>
+        <div class="color-row">
+          <label class="color-checkbox"><input type="checkbox" class="colorPick" value="W"> 白</label>
+          <label class="color-checkbox"><input type="checkbox" class="colorPick" value="U"> 青</label>
+          <label class="color-checkbox"><input type="checkbox" class="colorPick" value="B"> 黒</label>
+          <label class="color-checkbox"><input type="checkbox" class="colorPick" value="R"> 赤</label>
+          <label class="color-checkbox"><input type="checkbox" class="colorPick" value="G"> 緑</label>
+          <label class="color-checkbox"><input type="checkbox" class="colorPick" value="C"> 無色</label>
+        </div>
+      </div>
+
+      <div class="section row">
+        <div class="half">
+          <label>最速勝利ターン</label>
+          <input id="fastTurn" type="number" min="1" value="2" />
+        </div>
+        <div class="half">
+          <label>狙うバリューターン</label>
+          <input id="valueTurn" type="number" min="1" value="4" />
+        </div>
+      </div>
+
+      <div class="section">
+        <label>勝利パターン（改行で複数）</label>
+        <textarea id="strategies" rows="4">コンボ
+殴ってカードを稼ぐ
+軽い妨害で締める</textarea>
+      </div>
+
+      <div class="section">
+        <label>作成者名（カード右下に表示）</label>
+        <input id="author" type="text" placeholder="あなたの名前やハンドルネーム" />
+      </div>
+
+      <div class="section">
+        <button id="renderBtn" class="btn">プレビュー更新</button>
+        <button id="downloadBtn" class="btn" style="background:#06b6d4;margin-left:8px">
+          PNGで保存（Twitter 1200×675）
+        </button>
+      </div>
+
+      <footer>このツールは個人利用（練習・共有）向け。画像はローカルで生成され、サーバーには送信されません。</footer>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="card-wrap">
+        <div id="card" class="card" role="img" aria-label="統率者インフォグラフィック">
+
+          <div class="top">
+            <div>
+              <div style="font-size:12px;color:var(--muted)">統率者</div>
+              <div class="title" id="cardTitle">ティムナ & クラム</div>
+            </div>
+            <div class="color-banner" id="colorBanner"></div>
+          </div>
+
+          <div class="portrait-row" id="portraitRow">
+            <div id="slot1" class="portrait-slot single">
+              <div class="placeholder" id="ph1">MAIN</div>
+            </div>
+
+            <div id="slot2" class="portrait-slot double" style="display:none">
+              <div class="placeholder" id="ph2">PARTNER</div>
+            </div>
+          </div>
+
+          <div class="timeline-wrap">
+            <div class="timeline-title">ターン推移</div>
+            <div class="timeline-sub">下の数字がターン数。丸印の位置が「最速」と「狙うターン」の目安。</div>
+            <div class="timeline" id="timeline">
+              <div class="ticks" id="ticks"></div>
+              <div id="fastMarker" class="marker fast">2</div>
+              <div id="valueMarker" class="marker value">4</div>
+            </div>
+            <div class="marker-legend">
+              <span><span class="marker-dot fast"></span>最速</span>
+              <span><span class="marker-dot value"></span>狙うターン</span>
+            </div>
+          </div>
+
+          <div class="strategies" id="strategiesPreview">
+            コンボ / 殴ってカードを稼ぐ / 軽い妨害で締める
+          </div>
+
+          <div class="author" id="authorDisplay" style="display:none;"></div>
+
+        </div>
+      </div>
+      <div class="small">プレビューはこのカードそのもの。保存ボタンで1200×675 PNGを出力します。</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    const el = id => document.getElementById(id);
+
+    const colorMap = {
+      W:'#fef3c7',
+      U:'#bfdbfe',
+      B:'#cfc7d6',
+      R:'#fecaca',
+      G:'#bbf7d0',
+      C:'#e6e6e6'
+    };
+
+    const PLACEHOLDER_BG =
+      'url("data:image/svg+xml;utf8,' +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">' +
+        '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0%" stop-color="#1f2937"/>' +
+        '<stop offset="100%" stop-color="#0f172a"/>' +
+        '</linearGradient></defs>' +
+        '<rect width="100%" height="100%" fill="url(#g)"/>' +
+        '<text x="50%" y="50%" fill="#9ca3af" font-size="28" text-anchor="middle" dominant-baseline="middle" font-family="IBM Plex Sans JP">COMMANDER</text>' +
+        '</svg>'
+      ) + '")';
+
+    function readFileToDataURL(input, callback){
+      const file = input.files && input.files[0];
+      if(!file){ callback(null); return; }
+      const reader = new FileReader();
+      reader.onload = e => callback(e.target.result);
+      reader.readAsDataURL(file);
+    }
+
+    function renderTicks(container, displayCount){
+      container.innerHTML = '';
+      const count = Math.max(4, Math.min(12, displayCount));
+      for(let i=1;i<=count;i++){
+        const t = document.createElement('div');
+        t.className = 'tick';
+        const line = document.createElement('div');
+        line.className = 'tick-line';
+        const lbl = document.createElement('div');
+        lbl.className = 'tick-label';
+        lbl.textContent = i;
+        t.appendChild(line);
+        t.appendChild(lbl);
+        container.appendChild(t);
+      }
+    }
+
+    function setSlotBackground(slotEl, placeholderEl, fileInput, urlValue){
+      const url = (urlValue || '').trim();
+      if(fileInput && fileInput.files && fileInput.files[0]){
+        readFileToDataURL(fileInput, data=>{
+          if(data){
+            slotEl.style.backgroundImage = `url("${data}")`;
+            if(placeholderEl) placeholderEl.style.display = 'none';
+          }else{
+            slotEl.style.backgroundImage = PLACEHOLDER_BG;
+            if(placeholderEl) placeholderEl.style.display = 'none';
+          }
+        });
+      }else if(url){
+        // Scryfall など CORS 対応の画像URLを想定
+        slotEl.style.backgroundImage = `url("${url}")`;
+        if(placeholderEl) placeholderEl.style.display = 'none';
+      }else{
+        slotEl.style.backgroundImage = PLACEHOLDER_BG;
+        if(placeholderEl) placeholderEl.style.display = 'none';
+      }
+    }
+
+    function updatePreview(){
+      el('cardTitle').textContent = el('title').value || '統率者';
+
+      // 共闘
+      const partnerOn = el('partnerToggle').checked;
+      const slot1 = el('slot1');
+      const slot2 = el('slot2');
+      if(partnerOn){
+        slot1.className = 'portrait-slot double';
+        slot2.style.display = 'flex';
+      }else{
+        slot1.className = 'portrait-slot single';
+        slot2.style.display = 'none';
+      }
+      el('partnerBlock').style.display = partnerOn ? 'block' : 'none';
+
+      // 色
+      const colors = Array.from(document.querySelectorAll('.colorPick:checked')).map(n => n.value);
+      const banner = el('colorBanner');
+      banner.innerHTML = '';
+      if(colors.length === 0){
+        const pill = document.createElement('div');
+        pill.className = 'color-pill';
+        pill.style.background = '#1f2937';
+        pill.title = '無色';
+        banner.appendChild(pill);
+      }else{
+        colors.forEach(c=>{
+          const pill = document.createElement('div');
+          pill.className = 'color-pill';
+          pill.style.background = colorMap[c] || '#1f2937';
+          pill.title = c;
+          banner.appendChild(pill);
+        });
+      }
+
+      // 画像スロット
+      const img1Input = el('img1');
+      const imgUrl1 = el('imgUrl1').value;
+      setSlotBackground(el('slot1'), el('ph1'), img1Input, imgUrl1);
+
+      const img2Input = el('img2');
+      const imgUrl2 = el('imgUrl2').value;
+      if(partnerOn){
+        setSlotBackground(el('slot2'), el('ph2'), img2Input, imgUrl2);
+      }
+
+      // 戦略
+      const strat = el('strategies').value || '';
+      el('strategiesPreview').textContent = strat.replace(/\n/g,' / ');
+
+      // 作成者
+      const author = (el('author').value || '').trim();
+      const authorDisplay = el('authorDisplay');
+      if(author){
+        authorDisplay.textContent = '作成者: ' + author;
+        authorDisplay.style.display = 'block';
+      }else{
+        authorDisplay.style.display = 'none';
+      }
+
+      // ターン
+      let fast = Number(el('fastTurn').value);
+      let value = Number(el('valueTurn').value);
+      if(!fast || fast < 1) fast = 1;
+      if(!value || value < fast) value = fast;
+
+      const maxTurn = Math.max(fast, value, 6);
+      const displayCount = Math.min(12, maxTurn + 2);
+
+      renderTicks(el('ticks'), displayCount);
+
+      const timeline = el('timeline');
+      const innerWidth = timeline.clientWidth - 32; // padding左右合計32
+      const paddingLeft = 16;
+
+      const posForTurn = (turn)=>{
+        const count = Math.max(4, Math.min(12, displayCount));
+        const idx = Math.min(count-1, Math.max(0, turn-1));
+        const pct = count === 1 ? 0 : idx / (count-1);
+        return paddingLeft + pct * innerWidth;
+      };
+
+      const fastMarker = el('fastMarker');
+      const valueMarker = el('valueMarker');
+      fastMarker.textContent = fast;
+      valueMarker.textContent = value;
+      fastMarker.style.left = posForTurn(fast) + 'px';
+      valueMarker.style.left = posForTurn(value) + 'px';
+    }
+
+    el('renderBtn').addEventListener('click', updatePreview);
+    ['title','fastTurn','valueTurn','strategies','img1','img2','imgUrl1','imgUrl2','partnerToggle','author']
+      .forEach(id=>{
+        const node = el(id);
+        if(!node) return;
+        node.addEventListener('input', updatePreview);
+        node.addEventListener('change', updatePreview);
+      });
+    document.querySelectorAll('.colorPick').forEach(n=>{
+      n.addEventListener('change', updatePreview);
+    });
+
+    el('downloadBtn').addEventListener('click', async ()=>{
+      const card = el('card');
+      try{
+        const canvas = await html2canvas(card, {
+          scale:2,
+          backgroundColor:null,
+          useCORS:true
+        });
+        const link = document.createElement('a');
+        link.download = (el('title').value || 'commander') + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }catch(e){
+        alert('画像生成に失敗しました: ' + e);
+      }
+    });
+
+    // 初期表示
+    updatePreview();
+  </script>
+</body>
+</html>
