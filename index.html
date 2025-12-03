@@ -197,7 +197,7 @@
       margin-right:4px;
     }
     .marker-dot.fast{background:#ff8a80;}
-    .marker-dot.value{background:var(--accent);}
+    .marker-dot.value{background:#60a5fa;}
     .strategies{
       margin-top:14px;
       text-align:center;
@@ -282,7 +282,7 @@
   <div class="app">
     <div class="controls">
       <h3 style="margin:0;color:#eaf4ff">統率者インフォジェネレーター（完成版）</h3>
-      <p class="small">Scryfall の画像URL推奨。共闘ON時のみ2体目が出現。出力はTwitter向け1200×675 PNG。</p>
+      <p class="small">画像はローカルファイルから選択。共闘ON時のみ2体目が出現。出力はTwitter向け1200×675 PNG。</p>
 
       <div class="section">
         <label>タイトル（例：ティムナ & クラム）</label>
@@ -292,16 +292,10 @@
       <div class="section">
         <label>統率者画像（1体目・ファイル）</label>
         <input id="img1" type="file" accept="image/*" />
-        <label>統率者画像URL（1体目・任意）</label>
-        <input id="imgUrl1" type="text" placeholder="https://api.scryfall.com/.../art_crop" />
-        <div class="small">※ファイルが優先。URLは Scryfall の画像URL（art_crop など）推奨。</div>
-
         <label class="small"><input type="checkbox" id="partnerToggle"> 共闘を使う（2体目を追加）</label>
         <div id="partnerBlock" style="display:none;margin-top:8px">
           <label>統率者画像（2体目・ファイル）</label>
           <input id="img2" type="file" accept="image/*" />
-          <label>統率者画像URL（2体目・任意）</label>
-          <input id="imgUrl2" type="text" placeholder="https://api.scryfall.com/.../art_crop" />
         </div>
       </div>
 
@@ -424,7 +418,6 @@
         '</svg>'
       ) + '")';
 
-    // file or URL -> dataURL
     function fileToDataURL(file){
       return new Promise((resolve,reject)=>{
         const r = new FileReader();
@@ -432,28 +425,6 @@
         r.onerror = reject;
         r.readAsDataURL(file);
       });
-    }
-
-    async function urlToDataURL(url){
-      const res = await fetch(url, {mode:'cors'});
-      const blob = await res.blob();
-      return await fileToDataURL(blob);
-    }
-
-    async function getImageDataURL(fileInput, urlValue){
-      const url = (urlValue || '').trim();
-      if(fileInput && fileInput.files && fileInput.files[0]){
-        return await fileToDataURL(fileInput.files[0]);
-      }else if(url){
-        try{
-          return await urlToDataURL(url);
-        }catch(e){
-          console.warn('URL取得に失敗:', e);
-          return null;
-        }
-      }else{
-        return null;
-      }
     }
 
     function renderTicks(container, displayCount){
@@ -511,12 +482,11 @@
 
       // 画像スロット1
       const img1Input = el('img1');
-      const imgUrl1 = el('imgUrl1').value;
-      const slot1Data = await getImageDataURL(img1Input, imgUrl1);
       const slot1El = el('slot1');
       const ph1 = el('ph1');
-      if(slot1Data){
-        slot1El.style.backgroundImage = `url("${slot1Data}")`;
+      if(img1Input && img1Input.files && img1Input.files[0]){
+        const data = await fileToDataURL(img1Input.files[0]);
+        slot1El.style.backgroundImage = `url("${data}")`;
         ph1.style.display = 'none';
       }else{
         slot1El.style.backgroundImage = PLACEHOLDER_BG;
@@ -525,13 +495,12 @@
 
       // 画像スロット2（共闘時のみ）
       const img2Input = el('img2');
-      const imgUrl2 = el('imgUrl2').value;
       const slot2El = el('slot2');
       const ph2 = el('ph2');
       if(partnerOn){
-        const slot2Data = await getImageDataURL(img2Input, imgUrl2);
-        if(slot2Data){
-          slot2El.style.backgroundImage = `url("${slot2Data}")`;
+        if(img2Input && img2Input.files && img2Input.files[0]){
+          const data2 = await fileToDataURL(img2Input.files[0]);
+          slot2El.style.backgroundImage = `url("${data2}")`;
           ph2.style.display = 'none';
         }else{
           slot2El.style.backgroundImage = PLACEHOLDER_BG;
@@ -584,7 +553,7 @@
     }
 
     el('renderBtn').addEventListener('click', () => { updatePreview(); });
-    ['title','fastTurn','valueTurn','strategies','img1','img2','imgUrl1','imgUrl2','partnerToggle','author']
+    ['title','fastTurn','valueTurn','strategies','img1','img2','partnerToggle','author']
       .forEach(id=>{
         const node = el(id);
         if(!node) return;
