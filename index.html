@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>統率者インフォグラフィック - 完成版</title>
-  <!-- IBM Plex Sans JP for 高視認性の日本語UI -->
+  <!-- IBM Plex Sans JP -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -46,7 +46,6 @@
       align-items:center;
       gap:12px;
     }
-
     .card-wrap{
       background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);
       padding:12px;
@@ -54,7 +53,6 @@
       max-width:100%;
       overflow:auto;
     }
-    /* 保存とプレビューを一致させるため 1200x675 固定 */
     .card{
       width:1200px;
       height:675px;
@@ -67,7 +65,6 @@
       border:1px solid rgba(255,255,255,0.03);
       box-sizing:border-box;
     }
-
     .top{
       display:flex;
       justify-content:space-between;
@@ -89,7 +86,6 @@
       border-radius:6px;
       border:1px solid rgba(0,0,0,0.25);
     }
-
     .portrait-row{
       display:flex;
       justify-content:center;
@@ -108,21 +104,15 @@
       justify-content:center;
       background-size:cover;
       background-repeat:no-repeat;
-      /* イラスト部分が中央〜やや上寄りに来るように調整 */
       background-position:50% 30%;
     }
-    .portrait-slot.single{
-      width:60%;
-    }
-    .portrait-slot.double{
-      width:42%;
-    }
+    .portrait-slot.single{ width:60%; }
+    .portrait-slot.double{ width:42%; }
     .placeholder{
       font-weight:700;
       color:#d1d5db;
       font-size:14px;
     }
-
     .timeline-wrap{
       margin-top:16px;
       width:100%;
@@ -173,7 +163,6 @@
       font-size:11px;
       color:var(--muted);
     }
-
     .marker{
       position:absolute;
       top:16px;
@@ -189,15 +178,8 @@
       box-shadow:0 6px 18px rgba(0,0,0,0.55);
       border:3px solid var(--marker-edge);
     }
-    .marker.fast{
-      background:#ff8a80;
-      color:#2b0202;
-    }
-    .marker.value{
-      background:var(--accent);
-      color:#042238;
-    }
-
+    .marker.fast{ background:#ff8a80; color:#2b0202; }
+    .marker.value{ background:var(--accent); color:#042238; }
     .marker-legend{
       display:flex;
       justify-content:center;
@@ -216,7 +198,6 @@
     }
     .marker-dot.fast{background:#ff8a80;}
     .marker-dot.value{background:var(--accent);}
-
     .strategies{
       margin-top:14px;
       text-align:center;
@@ -225,7 +206,6 @@
       padding:0 12px;
       box-sizing:border-box;
     }
-
     .author{
       position:absolute;
       right:24px;
@@ -234,7 +214,6 @@
       color:var(--muted);
       text-align:right;
     }
-
     label{
       display:block;
       font-size:13px;
@@ -271,14 +250,8 @@
       color:var(--muted);
       margin-top:6px;
     }
-    .row{
-      display:flex;
-      gap:8px;
-    }
-    .half{
-      flex:1;
-    }
-
+    .row{ display:flex; gap:8px; }
+    .half{ flex:1; }
     .color-row{
       display:flex;
       flex-wrap:wrap;
@@ -294,13 +267,11 @@
       border:1px solid rgba(255,255,255,0.04);
       font-size:12px;
     }
-
     footer{
       font-size:12px;
       color:var(--muted);
       margin-top:10px;
     }
-
     @media (max-width:900px){
       .app{flex-direction:column}
       .controls{width:100%}
@@ -453,12 +424,36 @@
         '</svg>'
       ) + '")';
 
-    function readFileToDataURL(input, callback){
-      const file = input.files && input.files[0];
-      if(!file){ callback(null); return; }
-      const reader = new FileReader();
-      reader.onload = e => callback(e.target.result);
-      reader.readAsDataURL(file);
+    // file or URL -> dataURL
+    function fileToDataURL(file){
+      return new Promise((resolve,reject)=>{
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+    }
+
+    async function urlToDataURL(url){
+      const res = await fetch(url, {mode:'cors'});
+      const blob = await res.blob();
+      return await fileToDataURL(blob);
+    }
+
+    async function getImageDataURL(fileInput, urlValue){
+      const url = (urlValue || '').trim();
+      if(fileInput && fileInput.files && fileInput.files[0]){
+        return await fileToDataURL(fileInput.files[0]);
+      }else if(url){
+        try{
+          return await urlToDataURL(url);
+        }catch(e){
+          console.warn('URL取得に失敗:', e);
+          return null;
+        }
+      }else{
+        return null;
+      }
     }
 
     function renderTicks(container, displayCount){
@@ -478,29 +473,7 @@
       }
     }
 
-    function setSlotBackground(slotEl, placeholderEl, fileInput, urlValue){
-      const url = (urlValue || '').trim();
-      if(fileInput && fileInput.files && fileInput.files[0]){
-        readFileToDataURL(fileInput, data=>{
-          if(data){
-            slotEl.style.backgroundImage = `url("${data}")`;
-            if(placeholderEl) placeholderEl.style.display = 'none';
-          }else{
-            slotEl.style.backgroundImage = PLACEHOLDER_BG;
-            if(placeholderEl) placeholderEl.style.display = 'none';
-          }
-        });
-      }else if(url){
-        // Scryfall など CORS 対応の画像URLを想定
-        slotEl.style.backgroundImage = `url("${url}")`;
-        if(placeholderEl) placeholderEl.style.display = 'none';
-      }else{
-        slotEl.style.backgroundImage = PLACEHOLDER_BG;
-        if(placeholderEl) placeholderEl.style.display = 'none';
-      }
-    }
-
-    function updatePreview(){
+    async function updatePreview(){
       el('cardTitle').textContent = el('title').value || '統率者';
 
       // 共闘
@@ -536,15 +509,34 @@
         });
       }
 
-      // 画像スロット
+      // 画像スロット1
       const img1Input = el('img1');
       const imgUrl1 = el('imgUrl1').value;
-      setSlotBackground(el('slot1'), el('ph1'), img1Input, imgUrl1);
+      const slot1Data = await getImageDataURL(img1Input, imgUrl1);
+      const slot1El = el('slot1');
+      const ph1 = el('ph1');
+      if(slot1Data){
+        slot1El.style.backgroundImage = `url("${slot1Data}")`;
+        ph1.style.display = 'none';
+      }else{
+        slot1El.style.backgroundImage = PLACEHOLDER_BG;
+        ph1.style.display = 'none';
+      }
 
+      // 画像スロット2（共闘時のみ）
       const img2Input = el('img2');
       const imgUrl2 = el('imgUrl2').value;
+      const slot2El = el('slot2');
+      const ph2 = el('ph2');
       if(partnerOn){
-        setSlotBackground(el('slot2'), el('ph2'), img2Input, imgUrl2);
+        const slot2Data = await getImageDataURL(img2Input, imgUrl2);
+        if(slot2Data){
+          slot2El.style.backgroundImage = `url("${slot2Data}")`;
+          ph2.style.display = 'none';
+        }else{
+          slot2El.style.backgroundImage = PLACEHOLDER_BG;
+          ph2.style.display = 'none';
+        }
       }
 
       // 戦略
@@ -573,7 +565,7 @@
       renderTicks(el('ticks'), displayCount);
 
       const timeline = el('timeline');
-      const innerWidth = timeline.clientWidth - 32; // padding左右合計32
+      const innerWidth = timeline.clientWidth - 32;
       const paddingLeft = 16;
 
       const posForTurn = (turn)=>{
@@ -591,16 +583,16 @@
       valueMarker.style.left = posForTurn(value) + 'px';
     }
 
-    el('renderBtn').addEventListener('click', updatePreview);
+    el('renderBtn').addEventListener('click', () => { updatePreview(); });
     ['title','fastTurn','valueTurn','strategies','img1','img2','imgUrl1','imgUrl2','partnerToggle','author']
       .forEach(id=>{
         const node = el(id);
         if(!node) return;
-        node.addEventListener('input', updatePreview);
-        node.addEventListener('change', updatePreview);
+        node.addEventListener('input', () => { updatePreview(); });
+        node.addEventListener('change', () => { updatePreview(); });
       });
     document.querySelectorAll('.colorPick').forEach(n=>{
-      n.addEventListener('change', updatePreview);
+      n.addEventListener('change', () => { updatePreview(); });
     });
 
     el('downloadBtn').addEventListener('click', async ()=>{
@@ -608,8 +600,7 @@
       try{
         const canvas = await html2canvas(card, {
           scale:2,
-          backgroundColor:null,
-          useCORS:true
+          backgroundColor:null
         });
         const link = document.createElement('a');
         link.download = (el('title').value || 'commander') + '.png';
